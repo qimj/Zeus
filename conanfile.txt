@@ -1,0 +1,8 @@
+[requires]
+folly/master20160315@mogu/stable
+gtest/1.7.0@mogu/stable
+wangle/master20160315@mogu/stable
+glog/0.3.4@mogu/stable
+
+[generators]
+cmake
