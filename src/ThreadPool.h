@@ -29,7 +29,6 @@ struct LambdaTask final : public Task {
 };
 
 struct ThreadObj {
-
     static int _id_seq;
     int _id;
     std::atomic<bool> _stop {false};
@@ -62,7 +61,7 @@ struct ThreadObj {
 class ThreadPool {
 
 public:
-    ThreadPool (uint8_t size = 4) : _threadCnt(size) {
+    ThreadPool (uint32_t size = 4) : _threadCnt(size) {
         for (auto i = 0; i < size; ++i) {
             _threads.push_back(std::make_shared<ThreadObj>());
         }
@@ -79,14 +78,13 @@ public:
     ThreadPool&operator = (ThreadPool &&) = delete;
 
     template <typename Func>
-    void indexPush(Func&& f, uint8_t index){
-        assert(index < _threadCnt);
-        _threads[index]->submit(std::forward<Func>(f));
+    void indexPush(Func&& f, uint32_t index){
+        _threads[index % _threadCnt]->submit(std::forward<Func>(f));
     }
 
 private:
     std::vector<std::shared_ptr<ThreadObj>> _threads;
-    uint8_t _threadCnt;
+    uint32_t _threadCnt;
 };
 
 #endif //ASYN_TEST_THREADPOOL_H

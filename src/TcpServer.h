@@ -49,6 +49,11 @@ class TcpServer {
                 _sockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
             else
                 inet_pton(AF_INET, serverAddr, &_sockAddr.sin_addr);
+
+            //to avoid "Address already in use" error
+            int opt = 1;
+            throw_system_error_on(-1 == setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)), "setsockopt");
+
             int r = bind(_fd, (struct sockaddr *)&_sockAddr, sizeof(_sockAddr));
             throw_system_error_on(-1 == r, "bind");
         }
@@ -62,7 +67,7 @@ class TcpServer {
 public:
     TcpServer() {
         _evloop = std::make_shared<EventLoop>();
-//        _ioThreadPool = std::make_shared<ThreadPool>(2);
+        _ioThreadPool = std::make_shared<ThreadPool>(2);
     }
 
     ~TcpServer() {}
@@ -85,24 +90,33 @@ public:
 private:
 
     void accept() {
-        for(connectionPtr newCon = std::make_shared<Connection>(); (newCon->_fd = ::accept(_listener->_fd, (sockaddr *)&newCon->_sockAddr, &newCon->_addr_len)) >= 0;) {
+
+        do {
+            connectionPtr newCon = std::make_shared<Connection>();
+            newCon->_fd = ::accept(_listener->_fd, (sockaddr *) &newCon->_sockAddr, &newCon->_addr_len);
+            if(newCon->_fd == -1)
+                break;
 
             channelPtr c = std::make_shared<Channel>(newCon->_fd, EPOLLIN | EPOLLET);
-            c->fnOnRead_ = [c](){
-                auto parser = std::make_shared<ProtocolParser>();
-                parser->ParseMsg(c->fd_);
+            c->fnOnRead_ = [this, newCon]() {
+                _ioThreadPool->indexPush([newCon]() {
+                    auto parser = std::make_shared<ProtocolParser>();
+                    parser->ParseMsg(newCon->_fd);
 
-                parser->OnMsg([](const ProtocolParser::_REQ & fnOnMsg){
-                    cout << "wrapped a msg!" << endl;
-                });
+                    parser->OnMsg([](const ProtocolParser::_REQ & fnOnMsg){
+                        cout << "wrapped a msg!" << endl;
+                    });
+
+                }, newCon->_fd);
             };
 
             _connections[newCon->_fd] = newCon;
             _evloop->_poller->addChannel(c);
 
-            if(_fnOnConnection)
+            if (_fnOnConnection)
                 _fnOnConnection(newCon);
-        }
+
+        }while(true);
     }
 
 private:
@@ -111,7 +125,6 @@ private:
     std::shared_ptr<ThreadPool> _ioThreadPool;
     FnOnCon _fnOnConnection {nullptr};
     std::unique_ptr<Listener> _listener;
-
 };
 
 
