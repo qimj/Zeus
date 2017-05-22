@@ -7,7 +7,6 @@
 #include <cstring>
 #include <iostream>
 
-
 Epoller::Epoller(){
     fd_ = epoll_create(MAX_EPOLL_EVENTS);
     throw_system_error_on(fd_ == -1, "epoll_create");

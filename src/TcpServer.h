@@ -18,6 +18,8 @@
 #define LISTENQ 1000
 #define MAX_TCP_CONNECTIONS 10000
 
+extern void throw_system_error_on(bool condition, const char* what_arg);
+
 struct Connection {
     int _fd;
     struct sockaddr_in _sockAddr;
@@ -38,6 +40,7 @@ class TcpServer {
 
         Listener(uint32_t port, const char * serverAddr) {
             _fd = socket(AF_INET, SOCK_STREAM, 0);
+            throw_system_error_on(-1 == _fd, "socket");
             bzero(&_sockAddr, sizeof(_sockAddr));
             _sockAddr.sin_family = AF_INET;
             _sockAddr.sin_port = htons(port);
@@ -46,9 +49,13 @@ class TcpServer {
                 _sockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
             else
                 inet_pton(AF_INET, serverAddr, &_sockAddr.sin_addr);
-            bind(_fd, (struct sockaddr *)&_sockAddr, sizeof(_sockAddr));
+            int r = bind(_fd, (struct sockaddr *)&_sockAddr, sizeof(_sockAddr));
+            throw_system_error_on(-1 == r, "bind");
         }
-        void listen() { ::listen(_fd, LISTENQ); }
+        void listen() {
+            int r = ::listen(_fd, LISTENQ);
+            throw_system_error_on(-1 == r, "listen");
+        }
         ~Listener() { ::close(_fd); }
     };
 
