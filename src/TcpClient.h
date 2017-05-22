@@ -32,7 +32,7 @@ public:
         }
     }
 
-    TcpClient() { ::close(_sockFd); }
+    ~TcpClient() { ::close(_sockFd); }
     bool Send(std::shared_ptr<IOBuf>& buf) {
         send(_sockFd, buf->Get().get(), buf->Len(), 0);
     }

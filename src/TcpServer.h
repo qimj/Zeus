@@ -58,6 +58,8 @@ public:
 //        _ioThreadPool = std::make_shared<ThreadPool>(2);
     }
 
+    ~TcpServer() {}
+
     void listen(uint32_t port, const char * serverAddr = nullptr) {
         _listener = std::make_unique<Listener>(port, serverAddr);
         channelPtr c = std::make_shared<Channel>(_listener->_fd, EPOLLIN | EPOLLET);

@@ -35,11 +35,10 @@ public:
 
         while(true) {
 
-            std::cout << "parsing" << std::endl;
             auto head = std::make_shared<Protocol::MSG>();
-            int readlen = recv(fd, head.get(), sizeof(head), 0);
+            int readlen = recv(fd, head.get(), sizeof(Protocol::MSG), 0);
 
-            if(readlen != sizeof(head)){
+            if(readlen != sizeof(Protocol::MSG)){
                 if(readlen == -1 && errno != EAGAIN){
                     //error
                 } else if(readlen == -1) {
@@ -54,11 +53,11 @@ public:
                 return false;
 
             //TODO check dataLen
-            auto ioBuf = std::make_shared<IOBuf>(sizeof(Protocol::MSG) + head->dataLen);
-            ioBuf->Put((char *) head.get(), sizeof(head));
-            readlen = recv(fd, ioBuf->Get().get() + sizeof(head), head->dataLen, 0);
+            auto ioBuf = std::make_shared<IOBuf>((size_t)head->dataLen);
+            readlen = recv(fd, ioBuf->Get().get(), head->dataLen, 0);
+            ioBuf->Forward(head->dataLen);
 
-            if(readlen != sizeof(head->dataLen)){
+            if(readlen != head->dataLen){
                 if(readlen == -1 && errno != EAGAIN){
                     //error
                 } else if(readlen == -1) {
