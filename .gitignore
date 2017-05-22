@@ -1,0 +1,8 @@
+FingerprintTables.cpp
+Makefile
+Zeus.cbp
+bin/
+cmake-build-debug/
+cmake_install.cmake
+conanbuildinfo.cmake
+conaninfo.txt
