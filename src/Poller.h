@@ -1,0 +1,55 @@
+//
+// Created by comoon on 4/22/17.
+//
+
+#ifndef ZEUS_POLLER_H
+#define ZEUS_POLLER_H
+
+#include "Util.h"
+#include <sys/epoll.h>
+#include <memory>
+#include <array>
+
+#define MAX_EPOLL_EVENTS 10000
+
+struct Channel {
+    int fd_;
+    uint32_t events_;
+    std::function<void()> fnOnRead_;
+
+    Channel(int f, uint32_t e) : fd_(f), events_(e), fnOnRead_(nullptr) {}
+};
+
+typedef std::shared_ptr<Channel> channelPtr;
+
+
+struct PollerBase : public Noncopyable {
+    uint32_t active_;
+    PollerBase() : active_(0) {}
+
+    virtual void addChannel(channelPtr ch) = 0;
+    virtual void removeChannel(channelPtr ch) = 0;
+    virtual void updateChannel(channelPtr ch) = 0;
+    virtual void loopOnce(int waitMs) = 0;
+    virtual ~PollerBase() {};
+};
+
+class Epoller : public PollerBase {
+
+public:
+    Epoller();
+    ~Epoller();
+
+    virtual void addChannel(channelPtr ch) override;
+    virtual void removeChannel(channelPtr ch) override;
+    virtual void updateChannel(channelPtr ch) override ;
+    virtual void loopOnce(int waitMs) override;
+
+private:
+    int fd_;
+    struct epoll_event events_[MAX_EPOLL_EVENTS];
+    std::array<channelPtr, MAX_EPOLL_EVENTS> channels_;
+};
+
+
+#endif //ZEUS_POLLER_H
