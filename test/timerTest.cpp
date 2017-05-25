@@ -4,48 +4,27 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "src/Timer.h"
-#include "src/SmallHeap.h"
+#include "src/EventLoop.h"
 
 
 using namespace std;
 
 TEST(timer, test) {
 
-    SmallHeap<Timer> heap;
+    auto mainLoop = std::make_shared<EventLoop>();
 
-    heap.push_back(Timer(10, 9, [](){}));
-    heap.push_back(Timer(10, 3, [](){}));
-    heap.push_back(Timer(10, 11, [](){}));
-    heap.push_back(Timer(10, 6, [](){}));
-    heap.push_back(Timer(10, 5, [](){}));
+    mainLoop->add_timer(Timer(3000, 0, [](){
+        std::cout << "1" << std::endl;
+    }, true));
 
-    cout << "smallest : " << heap.front().msToRun << endl;
+    mainLoop->add_timer(Timer(2000, 1, [](){
+        std::cout << "2" << std::endl;
+    }, true));
 
-    heap.pop_front();
+    mainLoop->add_timer(Timer(6000, 2, [](){
+        std::cout << "3" << std::endl;
+    }, true));
 
-    cout << "smallest : " << heap.front().msToRun << endl;
 
-    heap.pop_front();
-
-    cout << "smallest : " << heap.front().msToRun << endl;
-
-    heap.pop_front();
-
-    cout << "smallest : " << heap.front().msToRun << endl;
-
-    heap.pop_front();
-
-    cout << "smallest : " << heap.front().msToRun << endl;
-
-    heap.at(0).msToRun = 100;
-
-    cout << "smallest : " << heap.front().msToRun << endl;
-
-    cout << "size : " << heap.size() << endl;
-
-    for (auto &i : heap)
-        i.msToRun = 123;
-
-    cout << heap.at(0).msToRun << endl;
+    mainLoop->loop_forever();
 }

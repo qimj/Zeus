@@ -15,8 +15,8 @@
 #include "ThreadPool.h"
 #include "ProtocolParser.h"
 
-#define LISTENQ 1000
-#define MAX_TCP_CONNECTIONS 10000
+#define LISTENQ 10000
+#define MAX_TCP_CONNECTIONS 100000
 
 extern void throw_system_error_on(bool condition, const char* what_arg);
 
@@ -67,7 +67,12 @@ class TcpServer {
 public:
     TcpServer() {
         _evloop = std::make_shared<EventLoop>();
-        _ioThreadPool = std::make_shared<ThreadPool>(2);
+        _ioThreadPool = std::make_shared<ThreadPool>(4);
+    }
+
+    TcpServer(std::shared_ptr<EventBase> ev) {
+        _evloop = ev;
+        _ioThreadPool = std::make_shared<ThreadPool>(4);
     }
 
     ~TcpServer() {}
@@ -90,7 +95,6 @@ public:
 private:
 
     void accept() {
-
         do {
             connectionPtr newCon = std::make_shared<Connection>();
             newCon->_fd = ::accept(_listener->_fd, (sockaddr *) &newCon->_sockAddr, &newCon->_addr_len);
@@ -99,9 +103,12 @@ private:
 
             channelPtr c = std::make_shared<Channel>(newCon->_fd, EPOLLIN | EPOLLET);
             c->fnOnRead_ = [this, newCon]() {
-                _ioThreadPool->indexPush([newCon]() {
+                _ioThreadPool->indexPush([this, newCon]() {
                     auto parser = std::make_shared<ProtocolParser>();
-                    parser->ParseMsg(newCon->_fd);
+                    auto res = parser->ParseMsg(newCon->_fd);
+
+                    if(!res)
+                        this->dropConnect(newCon);
 
                     parser->OnMsg([](const ProtocolParser::_REQ & fnOnMsg){
                         cout << "wrapped a msg!" << endl;
@@ -117,6 +124,11 @@ private:
                 _fnOnConnection(newCon);
 
         }while(true);
+    }
+
+    void dropConnect(connectionPtr con){
+        if(_connections[con->_fd])
+            _connections[con->_fd] = nullptr;
     }
 
 private:

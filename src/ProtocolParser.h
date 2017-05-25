@@ -44,7 +44,7 @@ public:
                 } else if(readlen == -1) {
                     return true;
                 }else if(readlen == 0) {
-                    return true;
+                    //client closed
                 }
                 return false;
             }
@@ -59,11 +59,9 @@ public:
 
             if(readlen != head->dataLen){
                 if(readlen == -1 && errno != EAGAIN){
-                    //error
                 } else if(readlen == -1) {
-
+                    return true;
                 }else if(readlen == 0) {
-                    //client closed
                 }
                 return false;
             }

@@ -20,9 +20,7 @@ class EventBase {
     friend class TcpServer;
 public:
     virtual ~EventBase() {};
-    virtual void add_timer(std::shared_ptr<Timer> &) = 0;
-
-protected:
+    virtual void add_timer(Timer &&) = 0;
     virtual void loop_once(uint32_t ms) = 0;
     virtual void loop_forever() = 0;
     bool isRunning() { return _running; }
@@ -31,20 +29,15 @@ protected:
     std::atomic<bool> _running {true};
     std::unique_ptr<TimerMg> _timerMg {nullptr};
     std::unique_ptr<PollerBase> _poller {nullptr};
+    uint32_t _lastLoopMs{0};
 };
 
 class EventLoop : public EventBase{
-
 public:
-
     EventLoop();
-    virtual void add_timer(std::shared_ptr<Timer> &) override ;
-
-protected:
+    virtual void add_timer(Timer &&) override ;
     virtual void loop_once(uint32_t ms) override;
     virtual void loop_forever() override;
-
-
 };
 
 
