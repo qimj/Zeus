@@ -11,6 +11,9 @@
 #include <unistd.h>
 #include <strings.h>
 #include <iostream>
+
+#include "Log.h"
+#include "Connection.h"
 #include "EventLoop.h"
 #include "ThreadPool.h"
 #include "ProtocolParser.h"
@@ -19,18 +22,6 @@
 #define MAX_TCP_CONNECTIONS 100000
 
 extern void throw_system_error_on(bool condition, const char* what_arg);
-
-struct Connection {
-    int _fd;
-    struct sockaddr_in _sockAddr;
-    socklen_t _addr_len{sizeof(_sockAddr)};
-
-    Connection(){}
-    ~Connection(){ ::close(_fd); }
-};
-
-typedef std::shared_ptr<Connection> connectionPtr;
-
 
 class TcpServer {
 
@@ -83,6 +74,8 @@ public:
         c->fnOnRead_ = [this]{ accept(); };
         _evloop->_poller->addChannel(c);
         _listener->listen();
+
+        LOG_DEBUG << "Server listend on : " << port <<  " " << serverAddr << endl;
     }
 
     void start() {
@@ -96,25 +89,29 @@ private:
 
     void accept() {
         do {
-            connectionPtr newCon = std::make_shared<Connection>();
+            connectionPtr newCon(new Connection());
             newCon->_fd = ::accept(_listener->_fd, (sockaddr *) &newCon->_sockAddr, &newCon->_addr_len);
             if(newCon->_fd == -1)
                 break;
+            else
+                LOG_DEBUG << "accept in : " << newCon->_fd << endl;
 
+            newCon->setIp();
             channelPtr c = std::make_shared<Channel>(newCon->_fd, EPOLLIN | EPOLLET);
-            c->fnOnRead_ = [this, newCon]() {
-                _ioThreadPool->indexPush([this, newCon]() {
+            c->fnOnRead_ = [this, fd = newCon->_fd]() {
+
+                _ioThreadPool->indexPush([this, fd]() {
                     auto parser = std::make_shared<ProtocolParser>();
-                    auto res = parser->ParseMsg(newCon->_fd);
+                    auto res = parser->ParseMsg(fd);
 
                     if(!res)
-                        this->dropConnect(newCon);
+                        dropConnect(fd);
 
                     parser->OnMsg([](const ProtocolParser::_REQ & fnOnMsg){
-                        cout << "wrapped a msg!" << endl;
+                        LOG_DEBUG << "wrapped a msg!" << endl;
                     });
 
-                }, newCon->_fd);
+                }, fd);
             };
 
             _connections[newCon->_fd] = newCon;
@@ -126,9 +123,16 @@ private:
         }while(true);
     }
 
-    void dropConnect(connectionPtr con){
-        if(_connections[con->_fd])
-            _connections[con->_fd] = nullptr;
+    void dropConnect(int fd){
+        if(_connections[fd]){
+
+            LOG_DEBUG << "drop connect : " << _connections[fd]->_ip << endl;
+
+            _connections[fd].reset();
+            _connections[fd] = nullptr;
+
+            _evloop->_poller->removeChannel(fd);
+        }
     }
 
 private:

@@ -11,6 +11,7 @@
 #include <fstream>
 #include <chrono>
 #include <iomanip>
+#include <iostream>
 
 using namespace std;
 
@@ -26,8 +27,11 @@ public:
         return *this;
     }
 
-    fstream & putLog(const char * lv) {
-        time_t nowTime = createLogFile();;
+    ostream & putLog(const char * lv) {
+        if(lv == "DEBUG")
+            return std::cout;
+
+        time_t nowTime = createLogFile();
         _ost << put_time(std::localtime(&nowTime), "%F %T");
         _ost << " [" << lv << "] ";
         return _ost;
@@ -55,7 +59,7 @@ private:
     }
 
 private:
-    fstream _ost;
+    ofstream _ost;
     uint64_t _currentDay{0};
     string _logName {"Zeus.log"};
 };

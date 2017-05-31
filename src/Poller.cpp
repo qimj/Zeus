@@ -30,12 +30,13 @@ void Epoller::addChannel(channelPtr ch) {
     channels_[ch->fd_] = ch;
 }
 
-void Epoller::removeChannel(channelPtr ch) {
-    channels_[ch->fd_] = nullptr;
-    for(auto &i : events_) {
-        if(ch.get() == i.data.ptr)
-            i.data.ptr = nullptr;
-    }
+void Epoller::removeChannel(int index) {
+    channels_[index].reset();
+    channels_[index] = nullptr;
+//    for(auto &i : events_) {
+//        if(ch.get() == i.data.ptr)
+//            i.data.ptr = nullptr;
+//    }
 }
 
 void Epoller::updateChannel(channelPtr ch) {

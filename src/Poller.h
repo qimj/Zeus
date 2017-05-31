@@ -28,7 +28,7 @@ struct PollerBase : public Noncopyable {
     PollerBase() : active_(0) {}
 
     virtual void addChannel(channelPtr ch) = 0;
-    virtual void removeChannel(channelPtr ch) = 0;
+    virtual void removeChannel(int index) = 0;
     virtual void updateChannel(channelPtr ch) = 0;
     virtual void loopOnce(int waitMs) = 0;
     virtual ~PollerBase() {};
@@ -41,7 +41,7 @@ public:
     ~Epoller();
 
     virtual void addChannel(channelPtr ch) override;
-    virtual void removeChannel(channelPtr ch) override;
+    virtual void removeChannel(int index) override;
     virtual void updateChannel(channelPtr ch) override ;
     virtual void loopOnce(int waitMs) override;
 

@@ -6,6 +6,8 @@
 #define ZEUS_PROTOCOLPARSER_H
 
 #include "IOBuf.h"
+#include "Connection.h"
+
 #include <cstdint>
 #include <memory>
 
