@@ -30,7 +30,7 @@ struct PollerBase : public Noncopyable {
     virtual void addChannel(channelPtr ch) = 0;
     virtual void removeChannel(int index) = 0;
     virtual void updateChannel(channelPtr ch) = 0;
-    virtual void loopOnce(int waitMs) = 0;
+    virtual int loopOnce(int waitMs) = 0;
     virtual ~PollerBase() {};
 };
 
@@ -43,7 +43,7 @@ public:
     virtual void addChannel(channelPtr ch) override;
     virtual void removeChannel(int index) override;
     virtual void updateChannel(channelPtr ch) override ;
-    virtual void loopOnce(int waitMs) override;
+    virtual int loopOnce(int waitMs) override;
 
 private:
     int fd_;

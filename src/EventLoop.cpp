@@ -27,7 +27,7 @@ void EventLoop::loop_forever() {
             _lastLoopMs = _timerMg->ScheduleOnce(_lastLoopMs);
         }
 
-        _poller->loopOnce(_lastLoopMs);
+        _lastLoopMs = _poller->loopOnce(_lastLoopMs);
     }
 
 }

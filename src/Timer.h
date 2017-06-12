@@ -14,7 +14,7 @@ struct Timer {
     bool isRepeat;
     Func callBack;
     uint64_t msInterval;
-    uint64_t msToRun;
+    int64_t msToRun;
 
     Timer() {}
     Timer(uint64_t interval, uint64_t toRun, Func && f, bool repeat = false) :
@@ -54,6 +54,7 @@ public:
         for(auto &t : timers) {
             t.msToRun = t.msToRun - ms;
 
+            //TODO timers callback should be called in another thread
             if(t.msToRun <= 0)
                 t.callBack();
         }
@@ -69,6 +70,8 @@ public:
                 return front.msToRun;
             }
         }
+
+        return 500;
     }
 
     bool Empty() { return timers.size() == 0;}

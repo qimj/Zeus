@@ -3,6 +3,7 @@
 //
 
 #include "Poller.h"
+#include <chrono>
 #include <unistd.h>
 #include <cstring>
 #include <iostream>
@@ -50,8 +51,9 @@ void Epoller::updateChannel(channelPtr ch) {
     channels_[ch->fd_] = ch;
 }
 
-void Epoller::loopOnce(int waitMs) {
+int Epoller::loopOnce(int waitMs) {
 
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     active_ = epoll_wait(fd_, events_, MAX_EPOLL_EVENTS, waitMs);
     throw_system_error_on(active_ == -1, "epoll_wait");
 
@@ -70,6 +72,8 @@ void Epoller::loopOnce(int waitMs) {
         }
     }
 
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 }
 
 

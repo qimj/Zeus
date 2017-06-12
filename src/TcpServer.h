@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <strings.h>
 #include <iostream>
+#include <set>
 
 #include "Log.h"
 #include "Connection.h"
@@ -59,11 +60,17 @@ public:
     TcpServer() {
         _evloop = std::make_shared<EventLoop>();
         _ioThreadPool = std::make_shared<ThreadPool>(4);
+        _evloop->add_timer(Timer(60000, 0, [this]{
+            heartBeat();
+        }, true));
     }
 
     TcpServer(std::shared_ptr<EventBase> ev) {
         _evloop = ev;
         _ioThreadPool = std::make_shared<ThreadPool>(4);
+        _evloop->add_timer(Timer(60000, 0, [this]{
+            heartBeat();
+        }, true));
     }
 
     ~TcpServer() {}
@@ -97,6 +104,7 @@ private:
                 LOG_DEBUG << "accept in : " << newCon->_fd << endl;
 
             newCon->setIp();
+            _heartBeatSet.emplace(newCon);
             channelPtr c = std::make_shared<Channel>(newCon->_fd, EPOLLIN | EPOLLET);
             c->fnOnRead_ = [this, fd = newCon->_fd]() {
 
@@ -112,6 +120,8 @@ private:
                     });
 
                 }, fd);
+
+                _connections[fd]->_lastActive = 300;
             };
 
             _connections[newCon->_fd] = newCon;
@@ -135,9 +145,27 @@ private:
         }
     }
 
+    void heartBeat(){
+        for(auto i : _heartBeatSet) {
+
+            if(i.expired())
+                _heartBeatSet.erase(i);
+            else {
+                auto con = i.lock();
+                con->_lastActive -= 60;
+
+                if(con->_lastActive <= 0) {
+                    dropConnect(con->_fd);
+                    _heartBeatSet.erase(i);
+                }
+            }
+        }
+    }
+
 private:
     std::shared_ptr<EventBase> _evloop;
     std::array<std::shared_ptr<Connection>, MAX_TCP_CONNECTIONS> _connections;
+    std::set<std::weak_ptr<Connection>> _heartBeatSet;
     std::shared_ptr<ThreadPool> _ioThreadPool;
     FnOnCon _fnOnConnection {nullptr};
     std::unique_ptr<Listener> _listener;
