@@ -19,5 +19,5 @@ FILE(GLOB_RECURSE SRC_INCLUDE_LIST RELATIVE ${PROJECT_SOURCE_DIR} "src/*.h*")
 add_executable(Zeus main.cpp ${SRC_LIST} ${SRC_INCLUDE_LIST})
 target_link_libraries(Zeus pthread)
 
-add_executable(Z_test ${SRC_LIST} ${TEST_SRC_LIST} test/test-main.cpp)
+add_executable(Z_test ${SRC_LIST} ${TEST_SRC_LIST} test/test-main.cpp test/memory_pool_test.cpp)
 target_link_libraries(Z_test ${GTEST_MAIN_LIBRARIES} pthread gtest)
