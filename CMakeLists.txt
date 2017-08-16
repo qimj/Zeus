@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.7)
 project(Zeus)
 
-#include(conanbuildinfo.cmake)
-#CONAN_BASIC_SETUP()
-
 find_library(GTEST libgtest.a PATHS /usr/lib /usr/local/lib)
 if(GTEST_NOT_FOUND)
     message(FATAL_ERROR "gtest not found, test won't success!")
@@ -19,5 +16,5 @@ FILE(GLOB_RECURSE SRC_INCLUDE_LIST RELATIVE ${PROJECT_SOURCE_DIR} "src/*.h*")
 add_executable(Zeus main.cpp ${SRC_LIST} ${SRC_INCLUDE_LIST})
 target_link_libraries(Zeus pthread)
 
-add_executable(Z_test ${SRC_LIST} ${TEST_SRC_LIST} test/test-main.cpp)
+add_executable(Z_test ${SRC_LIST} ${TEST_SRC_LIST})
 target_link_libraries(Z_test ${GTEST_MAIN_LIBRARIES} pthread gtest)

@@ -5,6 +5,7 @@
 #ifndef ZEUS_PROTOCOLPARSER_H
 #define ZEUS_PROTOCOLPARSER_H
 
+#include "Log.h"
 #include "IOBuf.h"
 #include "Connection.h"
 
@@ -24,57 +25,78 @@ struct Protocol {
     static_assert(sizeof(MSG)==12,"MSG size = 12");
 };
 
-
 class ProtocolParser {
 public:
 
     typedef std::shared_ptr<Protocol::MSG> _REQ;
     typedef std::shared_ptr<Protocol::MSG> _RSP;
-    typedef std::function<void(const _REQ&)> FnOnMsg;
+    typedef std::function<void(const std::shared_ptr<IOBuf> &&)> FnOnMsg;
 
     void OnMsg(const FnOnMsg & fnOnMsg) { _fnOnMsg = fnOnMsg; }
     bool ParseMsg(int fd) {
 
         while(true) {
 
-            auto head = std::make_shared<Protocol::MSG>();
-            int readlen = recv(fd, head.get(), sizeof(Protocol::MSG), 0);
+            //even not recved a full head
+            if(_recvedLen < sizeof(Protocol::MSG)) {
 
-            if(readlen != sizeof(Protocol::MSG)){
-                if(readlen == -1 && errno != EAGAIN){
-                    //error
-                } else if(readlen == -1) {
+                uint64_t remainLen = sizeof(Protocol::MSG) - _recvedLen;
+                int readlen = ::recv(fd, &_head +_recvedLen, remainLen, 0);
+
+                LOG_DEBUG << "Head recv : " << readlen << " remain : " << remainLen - readlen << endl;
+                if(-1 != readlen)
+                    _recvedLen += readlen;
+
+                if (readlen != remainLen) {
+                    throw_system_error_on(-1 == readlen && errno != EAGAIN, "recv");
+
+                    if (readlen == 0)
+                        return false;
+
                     return true;
-                }else if(readlen == 0) {
-                    //client closed
                 }
-                return false;
+
+                //head check things
+                if (_head.magic != MAGIC)
+                    return false;
             }
 
-            if (head->magic != MAGIC)
-                return false;
+            if(nullptr == _buf)
+                _buf.reset(new IOBuf((size_t) _head.dataLen));
 
-            //TODO check dataLen
-            auto ioBuf = std::make_shared<IOBuf>((size_t)head->dataLen);
-            readlen = recv(fd, ioBuf->Get().get(), head->dataLen, 0);
-            ioBuf->Forward(head->dataLen);
+            uint64_t remainLen = _head.dataLen - (_recvedLen - sizeof(Protocol::MSG));
+            int readlen = ::recv(fd, _buf->get(), remainLen, 0);
 
-            if(readlen != head->dataLen){
-                if(readlen == -1 && errno != EAGAIN){
-                } else if(readlen == -1) {
-                    return true;
-                }else if(readlen == 0) {
+            LOG_DEBUG << "Body len : " << _head.dataLen << " remain : " << remainLen - readlen << endl;
+
+            if (readlen != remainLen) {
+                throw_system_error_on(-1 == readlen && errno != EAGAIN, "recv");
+
+                if (readlen == 0)
+                    return false;
+
+                if(readlen != -1) {
+                    _recvedLen += readlen;
+                    _buf->Forward(readlen);
                 }
-                return false;
-            }
+                return true;
+            } else {
+                _buf->Forward(_head.dataLen);
+                if(_fnOnMsg)
+                    _fnOnMsg(std::move(_buf));
 
-            ioBuf->Print();
+                _buf = nullptr;
+                _recvedLen = 0;
+            }
         }
     }
 
 private:
 
     FnOnMsg _fnOnMsg;
+    size_t _recvedLen {0};
+    std::shared_ptr<IOBuf> _buf {nullptr};
+    Protocol::MSG _head;
 };
 
 #endif //ZEUS_PROTOCOLPARSER_H

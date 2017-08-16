@@ -6,7 +6,6 @@
 #include <chrono>
 #include <unistd.h>
 #include <cstring>
-#include <iostream>
 
 Epoller::Epoller(){
     fd_ = epoll_create(MAX_EPOLL_EVENTS);
@@ -18,7 +17,7 @@ Epoller::~Epoller(){
     ::close(fd_);
 }
 
-void Epoller::addChannel(channelPtr ch) {
+void Epoller::addChannel(channelPtr&& ch) {
     setFd_NonBlocking(ch->fd_);
 
     struct epoll_event ev;
@@ -28,19 +27,15 @@ void Epoller::addChannel(channelPtr ch) {
 
     int r = epoll_ctl(fd_, EPOLL_CTL_ADD, ch->fd_, &ev);
     throw_system_error_on(r == -1, "epoll_ctl");
-    channels_[ch->fd_] = ch;
+    channels_[ch->fd_] = std::move(ch);
 }
 
 void Epoller::removeChannel(int index) {
     channels_[index].reset();
     channels_[index] = nullptr;
-//    for(auto &i : events_) {
-//        if(ch.get() == i.data.ptr)
-//            i.data.ptr = nullptr;
-//    }
 }
 
-void Epoller::updateChannel(channelPtr ch) {
+void Epoller::updateChannel(channelPtr&& ch) {
     struct epoll_event ev;
     memset(&ev, 0, sizeof(ev));
     ev.events = ch->events_;
@@ -48,7 +43,7 @@ void Epoller::updateChannel(channelPtr ch) {
 
     int r = epoll_ctl(fd_, EPOLL_CTL_MOD, ch->fd_, &ev);
     throw_system_error_on(r == -1, "epoll_ctl");
-    channels_[ch->fd_] = ch;
+    channels_[ch->fd_] = std::move(ch);
 }
 
 int Epoller::loopOnce(int waitMs) {
@@ -62,12 +57,14 @@ int Epoller::loopOnce(int waitMs) {
         if(events_[i].data.ptr == nullptr)
             continue;
 
-        if(events_[i].events & EPOLLIN) {
-            auto f = (Channel*)events_[i].data.ptr;
+        auto f = (Channel*)events_[i].data.ptr;
+        if (events_[i].events & EPOLLRDHUP)
+            f->fnOnHup_();
+        else if(events_[i].events & EPOLLIN)
             f->fnOnRead_();
-        } else if(events_[i].events & (EPOLLERR | EPOLLHUP)) {
+        else if(events_[i].events & EPOLLERR) {
 
-        } else {
+        } else if (events_[i].events & EPOLLOUT){
 
         }
     }
@@ -75,5 +72,3 @@ int Epoller::loopOnce(int waitMs) {
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     return std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 }
-
-

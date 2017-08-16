@@ -39,9 +39,10 @@ public:
     }
 
     std::shared_ptr<char> Get() { return _buf; }
+    char * get() const { return _buf.get() + _currentEnd; }
+
     size_t Len() { return _len; }
-    void Print() { std::cout << _buf.get() << std::endl; }
-    void Print(size_t index) { std::cout << _buf.get() + index << std::endl; }
+    void Print(size_t index = 0) { std::cout << _buf.get() + index << std::endl; }
     void Forward(size_t len) { _currentEnd+= len; }
 
 private:

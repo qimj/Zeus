@@ -57,29 +57,21 @@ class TcpServer {
     };
 
 public:
-    TcpServer() {
-        _evloop = std::make_shared<EventLoop>();
-        _ioThreadPool = std::make_shared<ThreadPool>(4);
-        _evloop->add_timer(Timer(60000, 0, [this]{
-            heartBeat();
-        }, true));
+    TcpServer() : TcpServer(std::make_shared<EventLoop>()){
     }
 
     TcpServer(std::shared_ptr<EventBase> ev) {
         _evloop = ev;
         _ioThreadPool = std::make_shared<ThreadPool>(4);
-        _evloop->add_timer(Timer(60000, 0, [this]{
-            heartBeat();
-        }, true));
     }
 
     ~TcpServer() {}
 
     void listen(uint32_t port, const char * serverAddr = nullptr) {
         _listener = std::make_unique<Listener>(port, serverAddr);
-        channelPtr c = std::make_shared<Channel>(_listener->_fd, EPOLLIN | EPOLLET);
+        channelPtr c = std::make_unique<Channel>(_listener->_fd, EPOLLIN | EPOLLET);
         c->fnOnRead_ = [this]{ accept(); };
-        _evloop->_poller->addChannel(c);
+        _evloop->_poller->addChannel(std::move(c));
         _listener->listen();
 
         LOG_DEBUG << "Server listend on : " << port <<  " " << serverAddr << endl;
@@ -101,31 +93,34 @@ private:
             if(newCon->_fd == -1)
                 break;
             else
-                LOG_DEBUG << "accept in : " << newCon->_fd << endl;
+                LOG_DEBUG << "Accept in : " << newCon->_fd << endl;
 
-            newCon->setIp();
-            _heartBeatSet.emplace(newCon);
-            channelPtr c = std::make_shared<Channel>(newCon->_fd, EPOLLIN | EPOLLET);
-            c->fnOnRead_ = [this, fd = newCon->_fd]() {
+            //create parser for new connection and it has the same life with connection
+            auto parser = std::make_shared<ProtocolParser>();
+            channelPtr c = std::make_unique<Channel>(newCon->_fd, EPOLLIN | EPOLLRDHUP | EPOLLET);
 
-                _ioThreadPool->indexPush([this, fd]() {
-                    auto parser = std::make_shared<ProtocolParser>();
-                    auto res = parser->ParseMsg(fd);
+            c->fnOnRead_ = [this, parser, fd = newCon->_fd]() {
 
-                    if(!res)
-                        dropConnect(fd);
+                _ioThreadPool->indexPush([this, fd, parser]() {
 
-                    parser->OnMsg([](const ProtocolParser::_REQ & fnOnMsg){
-                        LOG_DEBUG << "wrapped a msg!" << endl;
+                    parser->OnMsg([](const std::shared_ptr<IOBuf> &&buf){
+                        buf->Print();
                     });
 
+                    auto res = parser->ParseMsg(fd);
+                    if(!res)
+                        dropConnect(fd);
                 }, fd);
+            };
 
-                _connections[fd]->_lastActive = 300;
+            c->fnOnHup_ = [this, fd = newCon->_fd](){
+                _ioThreadPool->indexPush([this, fd]() {
+                    dropConnect(fd);
+                }, fd);
             };
 
             _connections[newCon->_fd] = newCon;
-            _evloop->_poller->addChannel(c);
+            _evloop->_poller->addChannel(std::move(c));
 
             if (_fnOnConnection)
                 _fnOnConnection(newCon);
@@ -135,37 +130,18 @@ private:
 
     void dropConnect(int fd){
         if(_connections[fd]){
+            LOG_DEBUG << "Drop connect : " << fd << endl;
 
-            LOG_DEBUG << "drop connect : " << _connections[fd]->_ip << endl;
+            _evloop->_poller->removeChannel(fd);
 
             _connections[fd].reset();
             _connections[fd] = nullptr;
-
-            _evloop->_poller->removeChannel(fd);
-        }
-    }
-
-    void heartBeat(){
-        for(auto i : _heartBeatSet) {
-
-            if(i.expired())
-                _heartBeatSet.erase(i);
-            else {
-                auto con = i.lock();
-                con->_lastActive -= 60;
-
-                if(con->_lastActive <= 0) {
-                    dropConnect(con->_fd);
-                    _heartBeatSet.erase(i);
-                }
-            }
         }
     }
 
 private:
     std::shared_ptr<EventBase> _evloop;
     std::array<std::shared_ptr<Connection>, MAX_TCP_CONNECTIONS> _connections;
-    std::set<std::weak_ptr<Connection>> _heartBeatSet;
     std::shared_ptr<ThreadPool> _ioThreadPool;
     FnOnCon _fnOnConnection {nullptr};
     std::unique_ptr<Listener> _listener;

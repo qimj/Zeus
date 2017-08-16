@@ -43,6 +43,13 @@ public:
         int r = send(_sockFd, buf.Get().get(), buf.Len(), 0);
         throw_system_error_on(-1 == r, "send");
     }
+
+    bool Send(const char * p, size_t len) {
+        int r = send(_sockFd, p, len, 0);
+        throw_system_error_on(-1 == r, "send");
+    }
+    
+    int getFd() { return _sockFd; }
 protected:
     struct sockaddr_in _addr;
     int _sockFd;
