@@ -15,13 +15,14 @@
 #include "Connection.h"
 #include "EventLoop.h"
 #include "ThreadPool.h"
-#include "ProtocolParser.h"
+#include "TcpProtocolParser.h"
 
 #define LISTENQ 10000
 #define MAX_TCP_CONNECTIONS 100000
 
 extern void throw_system_error_on(bool condition, const char* what_arg);
 
+template <typename TcpParser>
 class TcpServer {
 
     struct Listener {
@@ -94,7 +95,9 @@ private:
                 LOG_DEBUG << "Accept in : " << newCon->_fd << endl;
 
             //create parser for new connection and it has the same life with connection
-            auto parser = std::make_shared<ProtocolParser>();
+            static_assert(std::is_base_of<ProtocolParser, TcpParser>::value);
+
+            auto parser = std::make_shared<TcpParser>();
             channelPtr c = std::make_unique<Channel>(newCon->_fd, EPOLLIN | EPOLLRDHUP | EPOLLET);
 
             c->fnOnRead_ = [this, parser, fd = newCon->_fd]() {
