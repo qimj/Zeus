@@ -10,8 +10,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <strings.h>
-#include <iostream>
-#include <set>
 
 #include "Log.h"
 #include "Connection.h"
@@ -104,7 +102,7 @@ private:
                 _ioThreadPool->indexPush([this, fd, parser]() {
 
                     parser->OnMsg([](const std::shared_ptr<IOBuf> &&buf){
-                        buf->Print();
+                        static_pointer_cast<ConstIOBuf>(buf)->Print();
                     });
 
                     auto res = parser->ParseMsg(fd);

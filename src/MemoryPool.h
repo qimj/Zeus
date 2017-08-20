@@ -1,5 +1,5 @@
 
-
+#include <memory>
 #include <cstring>
 #include <atomic>
 #include <array>

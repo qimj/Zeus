@@ -62,10 +62,10 @@ public:
             }
 
             if(nullptr == _buf)
-                _buf.reset(new IOBuf((size_t) _head.dataLen));
+                _buf.reset(new ConstIOBuf((size_t) _head.dataLen));
 
             uint64_t remainLen = _head.dataLen - (_recvedLen - sizeof(Protocol::MSG));
-            int readlen = ::recv(fd, _buf->get(), remainLen, 0);
+            int readlen = ::recv(fd, _buf->getTail(), remainLen, 0);
 
             LOG_DEBUG << "Body len : " << _head.dataLen << " remain : " << remainLen - readlen << endl;
 
@@ -77,11 +77,11 @@ public:
 
                 if(readlen != -1) {
                     _recvedLen += readlen;
-                    _buf->Forward(readlen);
+                    static_pointer_cast<ConstIOBuf>(_buf)->Forward(readlen);
                 }
                 return true;
             } else {
-                _buf->Forward(_head.dataLen);
+                static_pointer_cast<ConstIOBuf>(_buf)->Forward(_head.dataLen);
                 if(_fnOnMsg)
                     _fnOnMsg(std::move(_buf));
 

@@ -34,12 +34,12 @@ public:
     }
 
     ~TcpClient() { ::close(_sockFd); }
-    bool Send(std::shared_ptr<IOBuf>& buf) {
+    bool Send(std::shared_ptr<ConstIOBuf>& buf) {
         int r = send(_sockFd, buf->Get().get(), buf->Len(), 0);
         throw_system_error_on(-1 == r, "send");
     }
 
-    bool Send(IOBuf & buf) {
+    bool Send(ConstIOBuf & buf) {
         int r = send(_sockFd, buf.Get().get(), buf.Len(), 0);
         throw_system_error_on(-1 == r, "send");
     }
