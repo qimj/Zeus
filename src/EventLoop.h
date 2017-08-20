@@ -16,8 +16,6 @@ class TimerMg;
 class PollerBase;
 
 class EventBase {
-
-    friend class TcpServer;
 public:
     virtual ~EventBase() {};
     virtual void add_timer(Timer &&) = 0;
@@ -25,7 +23,6 @@ public:
     virtual void loop_forever() = 0;
     bool isRunning() { return _running; }
 
-protected:
     std::atomic<bool> _running {true};
     std::unique_ptr<TimerMg> _timerMg {nullptr};
     std::unique_ptr<PollerBase> _poller {nullptr};

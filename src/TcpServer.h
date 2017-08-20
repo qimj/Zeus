@@ -95,7 +95,7 @@ private:
                 LOG_DEBUG << "Accept in : " << newCon->_fd << endl;
 
             //create parser for new connection and it has the same life with connection
-            static_assert(std::is_base_of<ProtocolParser, TcpParser>::value);
+            static_assert(std::is_base_of<ProtocolParser, TcpParser>::value, "TcpParser should inherit from ProtocolParser");
 
             auto parser = std::make_shared<TcpParser>();
             channelPtr c = std::make_unique<Channel>(newCon->_fd, EPOLLIN | EPOLLRDHUP | EPOLLET);
