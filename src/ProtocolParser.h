@@ -11,6 +11,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <functional>
 
 #define MAGIC 0xFF9527FF
 

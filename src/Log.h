@@ -12,6 +12,7 @@
 #include <chrono>
 #include <iomanip>
 #include <iostream>
+#include <cstring>
 
 using namespace std;
 
@@ -28,10 +29,12 @@ public:
     }
 
     ostream & putLog(const char * lv) {
-        if(lv == "DEBUG")
-            return std::cout;
-
         time_t nowTime = createLogFile();
+        if(0 == strcmp(lv, "DEBUG")) {
+            std::cout << put_time(std::localtime(&nowTime), "%F %T") << " [" << lv << "] ";
+            return std::cout;
+        }
+
         _ost << put_time(std::localtime(&nowTime), "%F %T");
         _ost << " [" << lv << "] ";
         return _ost;

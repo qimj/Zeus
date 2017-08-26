@@ -21,9 +21,9 @@ public:
     auto begin() { return _que.begin(); }
     auto end() { return _que.end(); }
     T front() { return _que.front(); }
-    T& at(uint32_t n) { assert(n < _que.size()); return _que.at(n); }
-    T& operator [] (uint32_t n) { assert(n < _que.size()); return _que[n]; }
-    uint32_t size() { return _que.size(); }
+    T& at(u_int32_t n) { assert(n < _que.size()); return _que.at(n); }
+    T& operator [] (u_int32_t n) { assert(n < _que.size()); return _que[n]; }
+    u_int32_t size() { return _que.size(); }
 
     void pop_front() {
         pop_heap (_que.begin(),_que.end());

@@ -8,7 +8,7 @@
 
 TEST(tcp, server) {
 
-    TcpServer sv;
+    TcpServer<TcpProtocolParser> sv;
     sv.listen(5660, "127.0.0.1");
 
     sv.onNewConnect([](const std::shared_ptr<Connection>& con){

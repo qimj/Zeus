@@ -12,7 +12,7 @@
 #include <cstring>
 #include <cassert>
 
-#define DYNAMIC_BUF_BLOCK_SIZE 3
+#define DYNAMIC_BUF_BLOCK_SIZE 65536
 
 class IOBuf : Noncopyable {
 public:
@@ -86,12 +86,7 @@ public:
     ~DynamicIOBuf() {}
 
     virtual bool Put(const char * src, size_t len) final {
-
-        while(len > _len - _currentEnd) {
-            _buf.resize(_len + DYNAMIC_BUF_BLOCK_SIZE);
-            _len += DYNAMIC_BUF_BLOCK_SIZE;
-        }
-
+        TryToFit(len);
         memcpy((&_buf[_currentEnd]), src, len);
         _currentEnd += len;
     }
@@ -103,7 +98,15 @@ public:
         assert(index <= _len);
         std::cout << &_buf[index] << std::endl;
     }
-    void Forward(size_t len) { _currentEnd+= len; }
+
+    void TryToFit(size_t len) {
+        while(len > _len - _currentEnd) {
+            _buf.resize(_len + DYNAMIC_BUF_BLOCK_SIZE);
+            _len += DYNAMIC_BUF_BLOCK_SIZE;
+        }
+    }
+
+    void Forward(size_t len) { _currentEnd+= len;}
 
 private:
     std::vector<char> _buf;

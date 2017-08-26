@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <strings.h>
+#include <functional>
 
 #include "Log.h"
 #include "Connection.h"

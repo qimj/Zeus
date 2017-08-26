@@ -10,6 +10,7 @@
 #include <memory>
 #include <array>
 #include <iostream>
+#include <functional>
 
 #define MAX_EPOLL_EVENTS 10000
 
