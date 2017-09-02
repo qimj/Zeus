@@ -28,14 +28,12 @@ struct Protocol {
 
 class ProtocolParser {
 public:
-    typedef std::function<void(const std::shared_ptr<IOBuf> &&)> FnOnMsg;
-
-    void OnMsg(const FnOnMsg & fnOnMsg) { _fnOnMsg = fnOnMsg; }
+    ProtocolParser(void *p) { _serverPointer = p; }
     virtual bool ParseMsg(int fd) = 0;
 
 protected:
-    FnOnMsg _fnOnMsg {nullptr};
     std::shared_ptr<IOBuf> _buf {nullptr};
+    void * _serverPointer {nullptr};
 };
 
 #endif //ZEUS_PROTOCOLPARSER_H

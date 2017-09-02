@@ -12,6 +12,8 @@ public:
 
     typedef std::shared_ptr<Protocol::MSG> _REQ;
     typedef std::shared_ptr<Protocol::MSG> _RSP;
+
+    TcpProtocolParser(void *p) : ProtocolParser(p) {}
     
     virtual bool ParseMsg(int fd) final {
 
@@ -62,8 +64,8 @@ public:
                 return true;
             } else {
                 static_pointer_cast<ConstIOBuf>(_buf)->Forward(_head.dataLen);
-                if(_fnOnMsg)
-                    _fnOnMsg(std::move(_buf));
+
+                //TODO OnMessgae
 
                 _buf = nullptr;
                 _recvedLen = 0;

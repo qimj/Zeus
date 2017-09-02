@@ -6,8 +6,6 @@
 #include <gtest/gtest.h>
 #include <thread>
 #include "src/TcpClient.h"
-#include "src/ProtocolParser.h"
-
 
 //--gtest_filter=tcpClient.test
 // to executor a target gtest case

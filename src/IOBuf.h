@@ -11,6 +11,7 @@
 #include <memory>
 #include <cstring>
 #include <cassert>
+#include <vector>
 
 #define DYNAMIC_BUF_BLOCK_SIZE 65536
 

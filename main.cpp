@@ -1,4 +1,5 @@
 #include <iostream>
+#include "src/TcpProtocolParser.h"
 #include "src/TcpServer.h"
 
 using namespace std;

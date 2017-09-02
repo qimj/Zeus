@@ -12,11 +12,14 @@ using std::string;
 
 struct HttpRequest {
     enum class Method {
+        HEAD,
         GET,
         POST,
         PUT,
         DELETE,
         OPTIONS,
+        TRACE,
+        CONNECT,
         OTHER
     };
 

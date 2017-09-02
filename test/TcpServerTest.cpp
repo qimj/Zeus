@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 #include "src/TcpServer.h"
-
+#include "src/TcpProtocolParser.h"
 
 TEST(tcp, server) {
 

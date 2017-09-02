@@ -16,5 +16,20 @@ TEST(httpserver, test) {
         LOG_DEBUG << "a new connection is coming!" << endl;
     });
 
+    HTTP_ROUTE(sv, "/test/test").methods("POST")(
+            [](const HttpRequest& req, HttpResponse& rep){
+                LOG_DEBUG << "url : " << req._url << endl;
+                LOG_DEBUG << "body : " << req._body << endl;
+                for(auto const &i : req._heads)
+                    LOG_DEBUG << i.first << ":" << i.second << endl;
+            }
+    );
+
+    HTTP_ROUTE(sv, "/greet").methods("GET")(
+            [](const HttpRequest& req, HttpResponse& rep){
+                rep._body = "hello, world";
+            }
+    );
+
     mainLoop->loop_forever();
 }

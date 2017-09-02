@@ -6,6 +6,8 @@
 #define ZEUS_CONNECTION_H
 
 #include <memory>
+#include <netinet/in.h>
+#include <unistd.h>
 #include "ObjectPool.h"
 
 struct Connection : PoolObject<Connection>{

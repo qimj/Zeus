@@ -16,7 +16,7 @@
 #include "Connection.h"
 #include "EventLoop.h"
 #include "ThreadPool.h"
-#include "TcpProtocolParser.h"
+#include "ProtocolParser.h"
 
 #define LISTENQ 10000
 #define MAX_TCP_CONNECTIONS 100000
@@ -96,18 +96,18 @@ private:
                 LOG_DEBUG << "Accept in : " << newCon->_fd << endl;
 
             //create parser for new connection and it has the same life with connection
-            static_assert(std::is_base_of<ProtocolParser, TcpParser>::value, "TcpParser should inherit from ProtocolParser");
+//            static_assert(std::is_base_of<ProtocolParser, TcpParser>::value, "TcpParser should inherit from ProtocolParser");
 
-            auto parser = std::make_shared<TcpParser>();
+            auto parser = std::make_shared<TcpParser>(static_cast<void*>(this));
             channelPtr c = std::make_unique<Channel>(newCon->_fd, EPOLLIN | EPOLLRDHUP | EPOLLET);
 
             c->fnOnRead_ = [this, parser, fd = newCon->_fd]() {
 
                 _ioThreadPool->indexPush([this, fd, parser]() {
 
-                    parser->OnMsg([](const std::shared_ptr<IOBuf> &&buf){
-                        static_pointer_cast<ConstIOBuf>(buf)->Print();
-                    });
+//                    parser->OnMsg([](const std::shared_ptr<IOBuf> &&buf){
+//                        static_pointer_cast<ConstIOBuf>(buf)->Print();
+//                    });
 
                     auto res = parser->ParseMsg(fd);
                     if(!res)
